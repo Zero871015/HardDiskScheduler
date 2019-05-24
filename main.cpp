@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <ctime>
+#include <thread>
 using namespace std;
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
@@ -12,7 +13,9 @@ using namespace std;
 vector<pair<int,int>> ReadFile(ifstream& fin);
 int Distance(vector<pair<int,int>> v);
 vector<pair<int,int>> stairSort(vector<pair<int,int>> nums, int Qos, int offset = 0, bool isIncreaseFirst = true);
+void stairSort_reference(vector<pair<int, int>>& ans, vector<pair<int, int>> nums, int Qos, int offset, bool isIncreaseFirst);
 vector<pair<int, int>> randomSort(vector<pair<int, int>> nums, int Qos);
+void randomSort_reference(vector<pair<int, int>>& ans, vector<pair<int, int>> nums, int Qos);
 bool canPlaceHere(pair<int, int> num, int place, int Qos);
 bool chacker(vector<pair<int, int>> nums, int Qos);
 
@@ -45,21 +48,62 @@ int main(int argc, char* argv[])
 
 	vector<pair<int,int>> numbers = ReadFile(fin);
 	vector<pair<int,int>> ans = numbers;
+
+	std::vector<std::thread> threads(Qos);
+	vector<vector<pair<int, int>>> threadNums(Qos);
+
 	//Stair Sort
 	for (int i = 0; i < Qos; i++)
 	{
-		vector<pair<int,int>> temp = stairSort(numbers, Qos, i, false);
-		if (Distance(temp) < Distance(ans) && chacker(temp,Qos))ans = temp;
-		temp = stairSort(numbers, Qos, i, true);
-		if (Distance(temp) < Distance(ans) && chacker(temp, Qos))ans = temp;
+		threads[i] = thread(bind(stairSort_reference, ref(threadNums[i]), numbers, Qos, i, false));
 	}
+	for (auto& thread : threads)
+	{
+		thread.join();
+	}
+	for (int i = 0; i < (int)threadNums.size(); i++)
+	{
+		if (Distance(threadNums[i]) < Distance(ans) && chacker(threadNums[i], Qos))ans = threadNums[i];
+	}
+	threads.clear();
+	threadNums.clear();
+	threads.resize(Qos);
+	threadNums.resize(Qos);
+	
+	for (int i = 0; i < Qos; i++)
+	{
+		threads[i] = thread(bind(stairSort_reference, ref(threadNums[i]), numbers, Qos, i, true));
+	}
+	for (auto& thread : threads)
+	{
+		thread.join();
+	}
+	for (int i = 0; i < (int)threadNums.size(); i++)
+	{
+		if (Distance(threadNums[i]) < Distance(ans) && chacker(threadNums[i], Qos))ans = threadNums[i];
+	}
+	threads.clear();
+	threadNums.clear();
 
 	//Random Sort
-	for (int i = 0; i < 100; i++)
+	//Spent 10 sec in my computer.
+	threads.resize(10000);
+	threadNums.resize(10000);
+
+	for (int i = 0; i < 10000; i++)
 	{
-		vector<pair<int, int>> temp = randomSort(numbers, Qos);
-		if (Distance(temp) < Distance(ans) && chacker(temp, Qos))ans = temp;
+		threads[i] = thread(bind(randomSort_reference, ref(threadNums[i]), numbers, Qos));
 	}
+	for (auto& thread : threads)
+	{
+		thread.join();
+	}
+	for (int i = 0; i < (int)threadNums.size(); i++)
+	{
+		if (Distance(threadNums[i]) < Distance(ans) && chacker(threadNums[i], Qos))ans = threadNums[i];
+	}
+	threads.clear();
+	threadNums.clear();
 
 	//Show result
 	cout << Distance(ans) << endl;
@@ -152,6 +196,12 @@ vector<pair<int,int>> stairSort(vector<pair<int,int>> nums,int Qos,int offset,bo
 	return ans;
 }
 
+//TODO: Use reference to get return value, using in mulit thread.
+void stairSort_reference(vector<pair<int, int>>& ans , vector<pair<int, int>> nums, int Qos, int offset, bool isIncreaseFirst)
+{
+	ans = stairSort(nums, Qos, offset, isIncreaseFirst);
+}
+
 //TODO: Randomly pick up two numbers and exchange them.
 //If the number already moved, skip it.
 //This function may follow Qos to change numbers.
@@ -176,6 +226,12 @@ vector<pair<int, int>> randomSort(vector<pair<int, int>> nums, int Qos)
 	return nums;
 }
 
+//TODO: Use reference to get return value, using in mulit thread. 
+void randomSort_reference(vector<pair<int, int>>& ans, vector<pair<int, int>> nums, int Qos)
+{
+	ans = randomSort(nums, Qos);
+}
+
 //TODO: Chack the number can be this place or not.
 bool canPlaceHere(pair<int, int> num, int place, int Qos)
 {
@@ -193,3 +249,4 @@ bool chacker(vector<pair<int, int>> nums, int Qos)
 	}
 	return true;
 }
+
