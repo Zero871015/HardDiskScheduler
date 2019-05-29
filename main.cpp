@@ -53,44 +53,15 @@ int main(int argc, char* argv[])
 	vector<vector<pair<int, int>>> threadNums(Qos);
 
 	//Stair Sort
-	for (int i = 0; i < Qos; i++)
-	{
-		threads[i] = thread(bind(stairSort_reference, ref(threadNums[i]), numbers, Qos, i, false));
-	}
-	for (auto& thread : threads)
-	{
-		thread.join();
-	}
-	for (int i = 0; i < (int)threadNums.size(); i++)
-	{
-		if (Distance(threadNums[i]) < Distance(ans) && chacker(threadNums[i], Qos))ans = threadNums[i];
-	}
-	threads.clear();
-	threadNums.clear();
-	threads.resize(Qos);
-	threadNums.resize(Qos);
-	
-	for (int i = 0; i < Qos; i++)
-	{
-		threads[i] = thread(bind(stairSort_reference, ref(threadNums[i]), numbers, Qos, i, true));
-	}
-	for (auto& thread : threads)
-	{
-		thread.join();
-	}
-	for (int i = 0; i < (int)threadNums.size(); i++)
-	{
-		if (Distance(threadNums[i]) < Distance(ans) && chacker(threadNums[i], Qos))ans = threadNums[i];
-	}
-	threads.clear();
-	threadNums.clear();
+	vector<pair<int, int>> temp = stairSort(numbers, Qos);
+	if (Distance(temp) < Distance(ans) && chacker(temp, Qos))ans = temp;
 
 	//Random Sort
 	//Spent 10 sec in my computer.
-	threads.resize(10000);
-	threadNums.resize(10000);
+	threads.resize(10000/Qos);
+	threadNums.resize(10000/Qos);
 
-	for (int i = 0; i < 10000; i++)
+	for (int i = 0; i < 10000/Qos; i++)
 	{
 		threads[i] = thread(bind(randomSort_reference, ref(threadNums[i]), numbers, Qos));
 	}
@@ -106,11 +77,11 @@ int main(int argc, char* argv[])
 	threadNums.clear();
 
 	//Show result
-	cout << Distance(ans) << endl;
 	for (int i = 0; i < (int)ans.size(); i++)
 	{
 		cout << i + 1 << ":" << ans[i].second + 1 << endl;
 	}
+	cout << Distance(ans) << endl;
 
 	system("PAUSE");
 	return 0;
@@ -249,4 +220,3 @@ bool chacker(vector<pair<int, int>> nums, int Qos)
 	}
 	return true;
 }
-
