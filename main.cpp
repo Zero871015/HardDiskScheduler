@@ -16,6 +16,7 @@ vector<pair<int,int>> stairSort(vector<pair<int,int>> nums, int Qos, int offset 
 void stairSort_reference(vector<pair<int, int>>& ans, vector<pair<int, int>> nums, int Qos, int offset, bool isIncreaseFirst);
 vector<pair<int, int>> randomSort(vector<pair<int, int>> nums, int Qos);
 void randomSort_reference(vector<pair<int, int>>& ans, vector<pair<int, int>> nums, int Qos);
+vector<pair<int, int>> stairSort_EX(vector<pair<int, int>> nums, int Qos);
 bool canPlaceHere(pair<int, int> num, int place, int Qos);
 bool chacker(vector<pair<int, int>> nums, int Qos);
 
@@ -48,6 +49,7 @@ int main(int argc, char* argv[])
 
 	vector<pair<int,int>> numbers = ReadFile(fin);
 	vector<pair<int,int>> ans = numbers;
+	fin.close();
 
 	std::vector<std::thread> threads(Qos);
 	vector<vector<pair<int, int>>> threadNums(Qos);
@@ -56,8 +58,13 @@ int main(int argc, char* argv[])
 	vector<pair<int, int>> temp = stairSort(numbers, Qos);
 	if (Distance(temp) < Distance(ans) && chacker(temp, Qos))ans = temp;
 
+	temp = stairSort(numbers, Qos, 0, false);
+	if (Distance(temp) < Distance(ans) && chacker(temp, Qos))ans = temp;
+
+	temp = stairSort_EX(numbers, Qos);
+	if (Distance(temp) < Distance(ans) && chacker(temp, Qos))ans = temp;
+
 	//Random Sort
-	//Spent 10 sec in my computer.
 	threads.resize(10000/Qos);
 	threadNums.resize(10000/Qos);
 
@@ -76,11 +83,13 @@ int main(int argc, char* argv[])
 	threads.clear();
 	threadNums.clear();
 
-	//Show result
+	//Show result and output
+	ofstream fout("access.out");
 	for (int i = 0; i < (int)ans.size(); i++)
 	{
-		cout << i + 1 << ":" << ans[i].second + 1 << endl;
+		fout << i + 1 << ":" << ans[i].second + 1 << endl;
 	}
+	fout.close();
 	cout << Distance(ans) << endl;
 
 	system("PAUSE");
@@ -219,4 +228,47 @@ bool chacker(vector<pair<int, int>> nums, int Qos)
 			return false;
 	}
 	return true;
+}
+
+//TODO: Devide vector to some groups, and sort every group incrementally or decreasingly depend last number of  last group.
+//The number of groups depend on Qos.
+vector<pair<int, int>> stairSort_EX(vector<pair<int, int>> nums, int Qos)
+{
+	int group_size = (int)ceil((float)nums.size() / Qos);
+	vector<pair<int, int>> *groups = new vector<pair<int, int>>[group_size]();
+	vector<pair<int, int>> ans;
+
+	//devide nums by Qos
+	for (int i = 0; i < (int)nums.size(); i++)
+	{
+		pair<int, int> p(nums[i].first, nums[i].second);
+		groups[(i / Qos)].push_back(p);
+	}
+
+	//sort every group
+
+	int last_number = 0;
+	for (int i = 0; i < group_size; i++)
+	{
+		//sort first
+		sort(groups[i].begin(), groups[i].end());
+
+		//determine the last number close front or back
+		if (abs(last_number - groups[i].front().first) > abs(last_number - groups[i].back().first))
+		{
+			sort(groups[i].rbegin(), groups[i].rend());
+		}
+		last_number = groups[i].back().first;
+	}
+
+	//combine all groups
+	for (int i = 0; i < group_size; i++)
+	{
+		for (int j = 0; j < (int)groups[i].size(); j++)
+		{
+			ans.push_back(groups[i][j]);
+		}
+	}
+
+	return ans;
 }
